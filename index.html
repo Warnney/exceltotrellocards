@@ -39,8 +39,36 @@
   <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script>
+    window.TrelloPowerUp.initialize({
+      'board-buttons': function(t, options) {
+        return [{
+          icon: 'https://example.com/icon.png',
+          text: 'Upload Excel',
+          callback: function(t) {
+            return t.popup({
+              title: 'Upload Excel',
+              url: 'https://warnney.github.io/exceltotrellocards/'
+            });
+          }
+        }];
+      },
+      'authorization-status': function(t) {
+        return t.get('member', 'private', 'token').then(function(token) {
+          return { authorized: token !== null }
+        });
+      },
+      'show-settings': function(t) {
+        return t.popup({
+          title: 'Settings',
+          url: 'https://warnney.github.io/exceltotrellocards/settings.html',
+          height: 184
+        });
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
-      window.Trello.authorize({
+      // Verifica se está autorizado e chama a função de carregamento das listas
+      Trello.authorize({
         type: 'popup',
         name: 'Excel to Trello Cards',
         scope: {
@@ -49,8 +77,8 @@
         },
         expiration: 'never',
         success: function() {
-          window.Trello.cards.get('current', function(card) {
-            const boardId = card.idBoard;
+          Trello.members.get("me", function(member) {
+            var boardId = window.location.hash.split('/')[1];
             loadTrelloLists(boardId);
           });
         },
@@ -60,7 +88,7 @@
       });
 
       function loadTrelloLists(boardId) {
-        window.Trello.get(`/boards/${boardId}/lists`, function(lists) {
+        Trello.get(`/boards/${boardId}/lists`, function(lists) {
           const listSelect = document.getElementById('listSelect');
           lists.forEach(function(list) {
             const option = document.createElement('option');
@@ -106,7 +134,7 @@
           const dueDate = item['Data de Entrega'];
           const description = item['Descrição'];
 
-          window.Trello.post(`/cards`, {
+          Trello.post(`/cards`, {
             name: title,
             desc: description,
             idList: listId,
@@ -119,22 +147,6 @@
         });
 
         statusDiv.innerHTML = 'Cards criados com sucesso!';
-      }
-    });
-
-    // Função para adicionar o botão no quadro
-    window.TrelloPowerUp.initialize({
-      'board-buttons': function(t, options) {
-        return [{
-          icon: 'https://example.com/icon.png',
-          text: 'Upload Excel',
-          callback: function(t) {
-            return t.popup({
-              title: 'Upload Excel',
-              url: 'https://warnney.github.io/exceltotrellocards/'
-            });
-          }
-        }];
       }
     });
   </script>
