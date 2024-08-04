@@ -19,6 +19,9 @@
       border: none;
       cursor: pointer;
     }
+    .status {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -26,7 +29,7 @@
     <h1>Excel to Trello Cards</h1>
     <input type="file" id="fileInput" class="file-input" />
     <button id="uploadButton" class="button">Upload Excel</button>
-    <div id="status"></div>
+    <div id="status" class="status"></div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -62,6 +65,8 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+      const statusDiv = document.getElementById('status');
+      
       document.getElementById('uploadButton').addEventListener('click', function() {
         const fileInput = document.getElementById('fileInput');
         if (fileInput.files.length === 0) {
@@ -72,18 +77,26 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-          processExcelData(json);
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+            if (json.length === 0) {
+              throw new Error('A planilha está vazia.');
+            }
+
+            processExcelData(json);
+          } catch (error) {
+            statusDiv.innerHTML = `<p style="color: red;">Erro ao processar o arquivo: ${error.message}</p>`;
+          }
         };
         reader.readAsArrayBuffer(file);
       });
 
       function processExcelData(data) {
-        const statusDiv = document.getElementById('status');
         statusDiv.innerHTML = 'Processando dados...';
 
         const t = window.TrelloPowerUp.iframe();
@@ -101,8 +114,8 @@
       function createListsAndCards(data, existingLists, boardId) {
         const statusDiv = document.getElementById('status');
 
-        data.forEach((item, index) => {
-          if (!item['Lista']) return;  // Skip if 'Lista' is empty
+        const createListPromises = data.map((item, index) => {
+          if (!item['Lista']) return Promise.resolve();  // Skip if 'Lista' is empty
           
           const listName = item['Lista'];
           const title = item['Titulo'];
@@ -110,28 +123,35 @@
           const dueDate = item['Data_entrega'];
 
           if (!existingLists[listName]) {
-            Trello.post(`/lists`, { name: listName, idBoard: boardId }, function(newList) {
+            return Trello.post(`/lists`, { name: listName, idBoard: boardId }).then(newList => {
               existingLists[listName] = newList.id;
-              createCard(existingLists[listName], title, description, dueDate);
+              return createCard(existingLists[listName], title, description, dueDate);
             });
           } else {
-            createCard(existingLists[listName], title, description, dueDate);
+            return createCard(existingLists[listName], title, description, dueDate);
           }
         });
 
-        statusDiv.innerHTML = 'Processamento concluído!';
+        Promise.all(createListPromises)
+          .then(() => {
+            statusDiv.innerHTML = '<p style="color: green;">Processamento concluído!</p>';
+          })
+          .catch(error => {
+            statusDiv.innerHTML = `<p style="color: red;">Erro ao criar listas e cards: ${error.message}</p>`;
+          });
       }
 
       function createCard(listId, title, description, dueDate) {
-        Trello.post(`/cards`, {
+        return Trello.post(`/cards`, {
           name: title,
           desc: description,
           idList: listId,
           due: dueDate
-        }, function(card) {
+        }).then(card => {
           console.log(`Card "${title}" criado com sucesso!`);
-        }, function(error) {
+        }).catch(error => {
           console.error(`Erro ao criar o card "${title}":`, error);
+          throw error;
         });
       }
     });
