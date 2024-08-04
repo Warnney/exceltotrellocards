@@ -25,6 +25,17 @@
     .status p {
       margin: 5px 0;
     }
+    .progress {
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    .progress-bar {
+      width: 0;
+      height: 20px;
+      background-color: #4caf50;
+      text-align: center;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -32,6 +43,9 @@
     <h1>Excel to Trello Cards</h1>
     <input type="file" id="fileInput" class="file-input" />
     <button id="uploadButton" class="button">Upload Excel</button>
+    <div class="progress">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
     <div id="status" class="status"></div>
   </div>
 
@@ -48,7 +62,7 @@
           callback: function(t) {
             return t.popup({
               title: 'Upload Excel',
-              url: 'https://warnney.github.io/exceltotrellocards/'
+              url: 'https://seu-usuario.github.io/seu-repositorio/'
             });
           }
         }];
@@ -61,7 +75,7 @@
       'show-settings': function(t) {
         return t.popup({
           title: 'Settings',
-          url: 'https://warnney.github.io/exceltotrellocards/settings.html',
+          url: 'https://seu-usuario.github.io/seu-repositorio/settings.html',
           height: 184
         });
       }
@@ -69,6 +83,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       const statusDiv = document.getElementById('status');
+      const progressBar = document.getElementById('progressBar');
       
       document.getElementById('uploadButton').addEventListener('click', function() {
         const fileInput = document.getElementById('fileInput');
@@ -101,6 +116,7 @@
 
       function processExcelData(data) {
         statusDiv.innerHTML = 'Processando dados...';
+        progressBar.style.width = '0%';
 
         const t = window.TrelloPowerUp.iframe();
         t.board('id').then(function(board) {
@@ -114,11 +130,13 @@
         });
       }
 
-      function createListsAndCards(data, existingLists, boardId) {
+      async function createListsAndCards(data, existingLists, boardId) {
         const statusDiv = document.getElementById('status');
+        const totalItems = data.length;
+        let processedItems = 0;
 
-        const createListPromises = data.map((item, index) => {
-          if (!item['Lista']) return Promise.resolve();  // Skip if 'Lista' is empty
+        for (const item of data) {
+          if (!item['Lista']) continue;  // Skip if 'Lista' is empty
           
           const listName = item['Lista'];
           const title = item['Titulo'];
@@ -126,22 +144,27 @@
           const dueDate = item['Data_entrega'];
 
           if (!existingLists[listName]) {
-            return Trello.post(`/lists`, { name: listName, idBoard: boardId }).then(newList => {
+            try {
+              const newList = await Trello.post(`/lists`, { name: listName, idBoard: boardId });
               existingLists[listName] = newList.id;
-              return createCard(existingLists[listName], title, description, dueDate);
-            });
+              await createCard(existingLists[listName], title, description, dueDate);
+            } catch (error) {
+              statusDiv.innerHTML += `<p style="color: red;">Erro ao criar a lista "${listName}": ${error.message}</p>`;
+            }
           } else {
-            return createCard(existingLists[listName], title, description, dueDate);
+            try {
+              await createCard(existingLists[listName], title, description, dueDate);
+            } catch (error) {
+              statusDiv.innerHTML += `<p style="color: red;">Erro ao criar o card "${title}": ${error.message}</p>`;
+            }
           }
-        });
 
-        Promise.all(createListPromises)
-          .then(() => {
-            statusDiv.innerHTML = '<p style="color: green;">Processamento concluído!</p>';
-          })
-          .catch(error => {
-            statusDiv.innerHTML = `<p style="color: red;">Erro ao criar listas e cards: ${error.message}</p>`;
-          });
+          processedItems++;
+          const progress = (processedItems / totalItems) * 100;
+          progressBar.style.width = `${progress}%`;
+        }
+
+        statusDiv.innerHTML += '<p style="color: green;">Processamento concluído!</p>';
       }
 
       function createCard(listId, title, description, dueDate) {
