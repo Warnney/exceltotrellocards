@@ -67,19 +67,23 @@
       }
     });
 
-    function loadTrelloLists(boardId) {
-      Trello.get(`/boards/${boardId}/lists`, function(lists) {
-        const listSelect = document.getElementById('listSelect');
-        lists.forEach(function(list) {
-          const option = document.createElement('option');
-          option.value = list.id;
-          option.text = list.name;
-          listSelect.appendChild(option);
+    function loadTrelloLists(t) {
+      t.board('id').then(function(board) {
+        Trello.get(`/boards/${board.id}/lists`, function(lists) {
+          const listSelect = document.getElementById('listSelect');
+          lists.forEach(function(list) {
+            const option = document.createElement('option');
+            option.value = list.id;
+            option.text = list.name;
+            listSelect.appendChild(option);
+          });
         });
       });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      const t = window.TrelloPowerUp.iframe();
+
       Trello.authorize({
         type: 'popup',
         name: 'Excel to Trello Cards',
@@ -89,11 +93,9 @@
         },
         expiration: 'never',
         success: function() {
-          const t = window.TrelloPowerUp.iframe();
-          t.board('id')
-            .then(function(board) {
-              loadTrelloLists(board.id);
-            });
+          t.board('id').then(function(board) {
+            loadTrelloLists(board.id);
+          });
         },
         error: function() {
           document.getElementById('status').innerText = 'Erro na autenticação com o Trello.';
