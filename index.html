@@ -55,7 +55,7 @@
       },
       'authorization-status': function(t) {
         return t.get('member', 'private', 'token').then(function(token) {
-          return { authorized: token !== null }
+          return { authorized: token !== null };
         });
       },
       'show-settings': function(t) {
@@ -67,7 +67,23 @@
       }
     });
 
+    function loadTrelloLists(t) {
+      t.board('id').then(function(board) {
+        Trello.get(`/boards/${board.id}/lists`, function(lists) {
+          const listSelect = document.getElementById('listSelect');
+          lists.forEach(function(list) {
+            const option = document.createElement('option');
+            option.value = list.id;
+            option.text = list.name;
+            listSelect.appendChild(option);
+          });
+        });
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+      const t = window.TrelloPowerUp.iframe();
+
       Trello.authorize({
         type: 'popup',
         name: 'Excel to Trello Cards',
@@ -77,28 +93,12 @@
         },
         expiration: 'never',
         success: function() {
-          loadTrelloLists();
+          loadTrelloLists(t);
         },
         error: function() {
           document.getElementById('status').innerText = 'Erro na autenticação com o Trello.';
         }
       });
-
-      function loadTrelloLists() {
-        const t = window.TrelloPowerUp.iframe();
-        t.board('id')
-          .then(function(board) {
-            Trello.get(`/boards/${board.id}/lists`, function(lists) {
-              const listSelect = document.getElementById('listSelect');
-              lists.forEach(function(list) {
-                const option = document.createElement('option');
-                option.value = list.id;
-                option.text = list.name;
-                listSelect.appendChild(option);
-              });
-            });
-          });
-      }
 
       document.getElementById('uploadButton').addEventListener('click', function() {
         const listId = document.getElementById('listSelect').value;

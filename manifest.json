@@ -3,7 +3,7 @@
   "description": "Transforme uma tabela do Excel em cards do Trello",
   "author": "Warnney Machado",
   "icon": {
-    "url": "https://example.com/icon.png"  // URL do ícone
+    "url": "https://example.com/icon.png"
   },
   "capabilities": [
     "board-buttons",
