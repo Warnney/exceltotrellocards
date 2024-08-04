@@ -77,27 +77,27 @@
         },
         expiration: 'never',
         success: function() {
-          const t = window.TrelloPowerUp.iframe();
-          t.board('id')
-            .then(function(board) {
-              loadTrelloLists(board.id);
-            });
+          loadTrelloLists();
         },
         error: function() {
           document.getElementById('status').innerText = 'Erro na autenticação com o Trello.';
         }
       });
 
-      function loadTrelloLists(boardId) {
-        Trello.get(`/boards/${boardId}/lists`, function(lists) {
-          const listSelect = document.getElementById('listSelect');
-          lists.forEach(function(list) {
-            const option = document.createElement('option');
-            option.value = list.id;
-            option.text = list.name;
-            listSelect.appendChild(option);
+      function loadTrelloLists() {
+        const t = window.TrelloPowerUp.iframe();
+        t.board('id')
+          .then(function(board) {
+            Trello.get(`/boards/${board.id}/lists`, function(lists) {
+              const listSelect = document.getElementById('listSelect');
+              lists.forEach(function(list) {
+                const option = document.createElement('option');
+                option.value = list.id;
+                option.text = list.name;
+                listSelect.appendChild(option);
+              });
+            });
           });
-        });
       }
 
       document.getElementById('uploadButton').addEventListener('click', function() {
