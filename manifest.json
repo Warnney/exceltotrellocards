@@ -1,13 +1,14 @@
 {
   "name": "Excel to Trello Cards",
   "description": "Transforme uma tabela do Excel em cards do Trello",
-  "author": "Warnney Salvatore Almeida Machado",
+  "author": "Warnney Machado",
   "icon": {
     "url": "https://example.com/icon.png"  // URL do ícone
   },
   "capabilities": [
     "board-buttons",
-    "callback"
+    "authorization-status",
+    "show-settings"
   ],
   "connectors": {
     "iframe": {
