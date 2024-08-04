@@ -36,6 +36,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       window.Trello.authorize({
@@ -119,7 +120,22 @@
         statusDiv.innerHTML = 'Cards criados com sucesso!';
       }
     });
+
+    // Função para adicionar o botão no quadro
+    window.TrelloPowerUp.initialize({
+      'board-buttons': function(t, options) {
+        return [{
+          icon: 'https://example.com/icon.png',
+          text: 'Upload Excel',
+          callback: function(t) {
+            return t.popup({
+              title: 'Upload Excel',
+              url: 'https://warnney.github.io/exceltotrellocards/'
+            });
+          }
+        }];
+      }
+    });
   </script>
-  <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
 </body>
 </html>
