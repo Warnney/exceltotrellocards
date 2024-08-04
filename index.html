@@ -35,6 +35,7 @@
     <div id="status"></div>
   </div>
 
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
   <script src="https://trello.com/1/client.js?key=07ba9bd8332fef8cfcd1ee8bab1bfb3b"></script>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -67,7 +68,6 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      // Verifica se está autorizado e chama a função de carregamento das listas
       Trello.authorize({
         type: 'popup',
         name: 'Excel to Trello Cards',
@@ -77,10 +77,11 @@
         },
         expiration: 'never',
         success: function() {
-          Trello.members.get("me", function(member) {
-            var boardId = window.location.hash.split('/')[1];
-            loadTrelloLists(boardId);
-          });
+          const t = window.TrelloPowerUp.iframe();
+          t.board('id')
+            .then(function(board) {
+              loadTrelloLists(board.id);
+            });
         },
         error: function() {
           document.getElementById('status').innerText = 'Erro na autenticação com o Trello.';
